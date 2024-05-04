@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from constructs import Construct
-from cdktf import App, TerraformStack
+from cdktf import App, TerraformStack, TerraformOutput
 from cdktf_cdktf_provider_aws.provider import AwsProvider
 from cdktf_cdktf_provider_aws.default_vpc import DefaultVpc
 from cdktf_cdktf_provider_aws.default_subnet import DefaultSubnet
@@ -11,12 +11,13 @@ from cdktf_cdktf_provider_aws.lb_listener import LbListener
 from cdktf_cdktf_provider_aws.autoscaling_group import AutoscalingGroup
 from cdktf_cdktf_provider_aws.security_group import SecurityGroup, SecurityGroupIngress, SecurityGroupEgress
 from cdktf_cdktf_provider_aws.data_aws_caller_identity import DataAwsCallerIdentity
+import os
 
 import base64
 
-bucket=""
-dynamo_table=""
-your_repo=""
+bucket= os.getenv("BUCKET")
+dynamo_table= os.getenv("DYNAMO_TABLE")
+your_repo="https://github.com/thbtcrt/Graded_lab_2.git"
 
 
 user_data= base64.b64encode(f"""
@@ -30,7 +31,7 @@ git clone {your_repo}
 cd Ensai-CloudComputingLab1
 pip3 install -r requirements.txt
 python3 app.py
-echo "userdata-end""".encode("ascii")).decode("ascii")
+echo "userdata-end" """.encode("ascii")).decode("ascii")
 
 class ServerStack(TerraformStack):
     def __init__(self, scope: Construct, id: str):
@@ -87,15 +88,75 @@ class ServerStack(TerraformStack):
             ]
             )
         
-        launch_template = LaunchTemplate()
         
-        lb = Lb()
+        launch_template = LaunchTemplate(
+            self, "launch_template",
+            name="MyLaunchTemplate",
+            image_id="ami-080e1f13689e07408",
+            user_data=user_data,
+            instance_type="t2.micro",
+            key_name="vockey", 
+            security_groups=[security_group.id],  
+        )
+        
+        lb = Lb(
+            self, "lb",
+            name="my-load-balancer",
+            internal=False, 
+        )
 
-        target_group=LbTargetGroup()
+        target_group=LbTargetGroup(
+            self, "target_group",
+            name="my-target-group",
+            port=8080, 
+            protocol="HTTP",
+            target_type="instance",
+            vpc_id=default_vpc.id,
+        )
 
-        lb_listener = LbListener()
+        lb_listener = LbListener(
+            self, "lb_listener",
+            default_action=[{
+                "type": "forward",
+                "target_group_arn": target_group.arn,
+            }],
+            load_balancer_arn=lb.arn,
+            port=80, 
+            protocol="HTTP",
+        )
 
-        asg = AutoscalingGroup()
+        asg = AutoscalingGroup(
+            self, "asg",
+            name="my-auto-scaling-group",
+            launch_template=[{
+                "id": launch_template.id,
+                "version": "$Latest",
+            }],
+            min_size=1,
+            max_size=4,
+            desired_capacity=2,
+            vpc_zone_identifier=subnets, 
+            target_group_arns=[target_group.arn],
+            health_check_type="EC2", 
+            depends_on=[launch_template],  
+        )
+
+        # Sorties Terraform
+        TerraformOutput(self, "launch_template_id",
+                        value=launch_template.id,
+                        description="ID du Launch Template")
+
+        TerraformOutput(self, "lb_dns_name",
+                        value=lb.dns_name,
+                        description="DNS name du Load Balancer")
+
+        TerraformOutput(self, "target_group_arn",
+                        value=target_group.arn,
+                        description="ARN du Target Group")
+
+        TerraformOutput(self, "asg_name",
+                        value=asg.name,
+                        description="Nom du Auto Scaling Group")
 
 
 app = App()

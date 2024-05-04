@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
+
 from getSignedUrl import getSignedUrl
 
 load_dotenv()
@@ -41,6 +42,7 @@ class Post(BaseModel):
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.getenv("DYNAMO_TABLE"))
 
+# Endpoint to create a new post
 @app.post("/posts")
 async def post_a_post(post: Post, authorization: str | None = Header(default=None)):
 
@@ -48,25 +50,35 @@ async def post_a_post(post: Post, authorization: str | None = Header(default=Non
     logger.info(f"body : {post.body}")
     logger.info(f"user : {authorization}")
 
-    # Doit retourner le résultat de la requête la table dynamodb
-    return []
+    # Extract user from authorization header
+    user = authorization.split(":")[0] if authorization else None
 
+    # Save post to DynamoDB
+    item = {
+        "user": user,
+        "title": post.title,
+        "body": post.body
+    }
+    table.put_item(Item=item)
+
+    return {"message": "Post created successfully"}
+
+# Endpoint to get all posts
 @app.get("/posts")
 async def get_all_posts(user: Union[str, None] = None):
 
-    # Doit retourner une liste de post
-    return []
+    # If user provided, query posts by user
+    if user:
+        response = table.query(
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('user').eq(user)
+        )
+        posts = response['Items']
+    # Otherwise, get all posts
+    else:
+        response = table.scan()
+        posts = response['Items']
 
-    
-@app.delete("/posts/{post_id}")
-async def get_post_user_id(post_id: str):
-    # Doit retourner le résultat de la requête la table dynamodb
-    return []
-
-@app.get("/signedUrlPut")
-async def get_signed_url_put(filename: str,filetype: str, postId: str,authorization: str | None = Header(default=None)):
-    return getSignedUrl(filename, filetype, postId, authorization)
+    return posts
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
-
