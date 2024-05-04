@@ -7,20 +7,18 @@ from cdktf_cdktf_provider_aws.default_subnet import DefaultSubnet
 from cdktf_cdktf_provider_aws.launch_template import LaunchTemplate
 from cdktf_cdktf_provider_aws.lb import Lb
 from cdktf_cdktf_provider_aws.lb_target_group import LbTargetGroup
-from cdktf_cdktf_provider_aws.lb_listener import LbListener
+from cdktf_cdktf_provider_aws.lb_listener import LbListener, LbListenerDefaultAction
 from cdktf_cdktf_provider_aws.autoscaling_group import AutoscalingGroup
 from cdktf_cdktf_provider_aws.security_group import SecurityGroup, SecurityGroupIngress, SecurityGroupEgress
 from cdktf_cdktf_provider_aws.data_aws_caller_identity import DataAwsCallerIdentity
 import os
-
 import base64
 
-bucket= os.getenv("BUCKET")
-dynamo_table= os.getenv("DYNAMO_TABLE")
-your_repo="https://github.com/thbtcrt/Graded_lab_2.git"
+bucket = os.getenv("BUCKET")
+dynamo_table = os.getenv("DYNAMO_TABLE")
+your_repo = "https://github.com/thbtcrt/Graded_lab_2.git"
 
-
-user_data= base64.b64encode(f"""
+user_data = base64.b64encode(f"""
 #!/bin/bash
 echo "userdata-start"
 echo 'export BUCKET={bucket}' >> /etc/environment
@@ -49,11 +47,11 @@ class ServerStack(TerraformStack):
         # pour y arriver est vraiment compliqué.
         az_ids = [f"us-east-1{i}" for i in "abcdef"]
         subnets= []
-        for i,az_id in enumerate(az_ids):
+        for i, az_id in enumerate(az_ids):
             subnets.append(DefaultSubnet(
-            self, f"default_sub{i}",
-            availability_zone=az_id
-        ).id)
+                self, f"default_sub{i}",
+                availability_zone=az_id
+            ).id)
             
 
         security_group = SecurityGroup(
@@ -86,79 +84,62 @@ class ServerStack(TerraformStack):
                     protocol="-1"
                 )
             ]
-            )
-        
-        
+        )   
+
         launch_template = LaunchTemplate(
             self, "launch_template",
             name="MyLaunchTemplate",
             image_id="ami-080e1f13689e07408",
-            user_data=user_data,
             instance_type="t2.micro",
-            key_name="vockey", 
-            security_groups=[security_group.id],  
+            key_name="vockey",
+            user_data=user_data,
+            vpc_security_group_ids=[security_group.id],
+            iam_instance_profile={"name": "LabInstanceProfile"}
         )
-        
+
         lb = Lb(
             self, "lb",
             name="my-load-balancer",
-            internal=False, 
+            load_balancer_type="application",
+            security_groups=[security_group.id],
+            subnets=subnets
         )
 
-        target_group=LbTargetGroup(
+        target_group = LbTargetGroup(
             self, "target_group",
             name="my-target-group",
-            port=8080, 
+            port=8080,
             protocol="HTTP",
             target_type="instance",
-            vpc_id=default_vpc.id,
+            vpc_id=default_vpc.id
         )
 
         lb_listener = LbListener(
             self, "lb_listener",
-            default_action=[{
-                "type": "forward",
-                "target_group_arn": target_group.arn,
-            }],
+            default_action=[LbListenerDefaultAction(type="forward", target_group_arn=target_group.arn)],
             load_balancer_arn=lb.arn,
-            port=80, 
-            protocol="HTTP",
+            port=80,
+            protocol="HTTP"
         )
 
         asg = AutoscalingGroup(
             self, "asg",
             name="my-auto-scaling-group",
-            launch_template=[{
-                "id": launch_template.id,
-                "version": "$Latest",
-            }],
+            launch_template={"id":launch_template.id},
             min_size=1,
             max_size=4,
-            desired_capacity=2,
-            vpc_zone_identifier=subnets, 
-            target_group_arns=[target_group.arn],
-            health_check_type="EC2", 
-            depends_on=[launch_template],  
+            desired_capacity=1,
+            vpc_zone_identifier=subnets,
+            target_group_arns=[target_group.arn]
         )
 
-        # Sorties Terraform
-        TerraformOutput(self, "launch_template_id",
-                        value=launch_template.id,
-                        description="ID du Launch Template")
-
-        TerraformOutput(self, "lb_dns_name",
+        TerraformOutput(self, "load_balancer_dns_name",
                         value=lb.dns_name,
-                        description="DNS name du Load Balancer")
-
-        TerraformOutput(self, "target_group_arn",
-                        value=target_group.arn,
-                        description="ARN du Target Group")
-
-        TerraformOutput(self, "asg_name",
-                        value=asg.name,
-                        description="Nom du Auto Scaling Group")
-
+                        description="DNS name of the load balancer")
+        
 
 app = App()
 ServerStack(app, "cdktf_server")
 app.synth()
+
+# https://my-load-balancer-1172749094.us-east-1.elb.amazonaws.com/docs

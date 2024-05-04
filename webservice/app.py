@@ -61,7 +61,8 @@ async def post_a_post(post: Post, authorization: str | None = Header(default=Non
     }
     table.put_item(Item=item)
 
-    return {"message": "Post created successfully"}
+    # Doit retourner le résultat de la requête la table dynamodb
+    return {"message": "Post created successfully", "post": item}
 
 # Endpoint to get all posts
 @app.get("/posts")
@@ -82,3 +83,5 @@ async def get_all_posts(user: Union[str, None] = None):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8080, log_level="debug")
+
+# http://0.0.0.0:8080/docs
