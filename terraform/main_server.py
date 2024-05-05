@@ -16,7 +16,7 @@ import base64
 
 bucket = os.getenv("BUCKET")
 dynamo_table = os.getenv("DYNAMO_TABLE")
-your_repo = "https://github.com/thbtcrt/Graded_lab_2.git"
+your_repo = "https://github.com/thbtcrt/Graded_lab_2"
 
 user_data = base64.b64encode(f"""
 #!/bin/bash
@@ -142,4 +142,4 @@ app = App()
 ServerStack(app, "cdktf_server")
 app.synth()
 
-# https://my-load-balancer-1172749094.us-east-1.elb.amazonaws.com/docs
+# https://my-load-balancer-948338658.us-east-1.elb.amazonaws.com/docs
