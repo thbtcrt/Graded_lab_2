@@ -26,7 +26,7 @@ echo 'export DYNAMO_TABLE={dynamo_table}' >> /etc/environment
 apt update
 apt install -y python3-pip
 git clone {your_repo}
-cd Ensai-CloudComputingLab1
+cd Graded_lab_2/webservice
 pip3 install -r requirements.txt
 python3 app.py
 echo "userdata-end" """.encode("ascii")).decode("ascii")

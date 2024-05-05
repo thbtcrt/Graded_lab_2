@@ -48,11 +48,11 @@ class ServerlessStack(TerraformStack):
         )
 
         TerraformOutput(self, "s3_bucket_name",
-                        value=bucket.bucket_domain_name,
+                        value=bucket.id,
                         description="Name of the S3 bucket")
 
         TerraformOutput(self, "dynamodb_table_name",
-                        value=dynamo_table.name,
+                        value=dynamo_table.id,
                         description="Name of the DynamoDB table")
 
 
