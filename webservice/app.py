@@ -69,7 +69,7 @@ async def get_all_posts(user: Union[str, None] = None):
     # If user provided, query posts by user
     if user:
         response = table.query(
-            KeyConditionExpression=boto3.dynamodb.conditions.Key('user').eq(user)
+            KeyConditionExpression=boto3.dynamodb.conditions.Key('user').eq(f"USER#{user}")
         )
         posts = response['Items']
     # Otherwise, get all posts
