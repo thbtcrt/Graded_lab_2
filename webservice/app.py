@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
-
+import uuid
 
 from getSignedUrl import getSignedUrl
 
@@ -50,19 +50,17 @@ async def post_a_post(post: Post, authorization: str | None = Header(default=Non
     logger.info(f"body : {post.body}")
     logger.info(f"user : {authorization}")
 
-    # Extract user from authorization header
-    user = authorization.split(":")[0] if authorization else None
-
     # Save post to DynamoDB
     item = {
-        "user": user,
+        "user": f"USER#{authorization}",
+        'id': f"POST#{uuid.uuid4()}",
         "title": post.title,
         "body": post.body
     }
     table.put_item(Item=item)
 
     # Doit retourner le résultat de la requête la table dynamodb
-    return {"message": "Post created successfully", "post": item}
+    return item
 
 # Endpoint to get all posts
 @app.get("/posts")
