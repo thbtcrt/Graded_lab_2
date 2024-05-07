@@ -1,8 +1,7 @@
 import requests
 
 # URL de l'API
-base_url2 = "http://0.0.0.0:8080"
-base_url = "my-load-balancer-948338658.us-east-1.elb.amazonaws.com" 
+base_url = "http://0.0.0.0:8080"
 
 # Données pour créer un nouveau post avec un utilisateur special
 post = {
