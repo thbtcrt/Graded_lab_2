@@ -1,5 +1,6 @@
 import boto3
 import os
+from botocore.config import Config
 from dotenv import load_dotenv
 from typing import Union
 import logging
@@ -39,7 +40,12 @@ class Post(BaseModel):
     body: str
 
 
-dynamodb = boto3.resource('dynamodb')
+my_config = Config(
+    region_name='us-east-1',
+    signature_version='v4',
+)
+
+dynamodb = boto3.resource('dynamodb', config=my_config)
 table = dynamodb.Table(os.getenv("DYNAMO_TABLE"))
 
 # Endpoint to create a new post

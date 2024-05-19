@@ -18,18 +18,22 @@ bucket = os.getenv("BUCKET")
 dynamo_table = os.getenv("DYNAMO_TABLE")
 your_repo = "https://github.com/thbtcrt/Graded_lab_2"
 
-user_data = base64.b64encode(f"""
+user_data= base64.b64encode(f"""
 #!/bin/bash
-echo "userdata-start"
-echo 'export BUCKET={bucket}' >> /etc/environment
-echo 'export DYNAMO_TABLE={dynamo_table}' >> /etc/environment           
+echo "userdata-start"        
 apt update
-apt install -y python3-pip
-git clone {your_repo}
-cd Graded_lab_2/webservice
+apt install -y python3-pip python3.12-venv
+git clone {your_repo} projet
+cd projet/webservice
+rm .env
+echo 'BUCKET={bucket}' >> .env
+echo 'DYNAMO_TABLE={dynamo_table}' >> .env
+python3 -m venv venv
+source venv/bin/activate
+chmod -R a+rwx venv
 pip3 install -r requirements.txt
 python3 app.py
-echo "userdata-end" """.encode("ascii")).decode("ascii")
+echo "userdata-end""".encode("ascii")).decode("ascii")
 
 class ServerStack(TerraformStack):
     def __init__(self, scope: Construct, id: str):
