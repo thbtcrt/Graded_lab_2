@@ -2,6 +2,7 @@ import requests
 
 # URL de l'API
 base_url = "http://0.0.0.0:8080"
+
 '''
 # Données pour créer un nouveau post avec un utilisateur special
 post = {
