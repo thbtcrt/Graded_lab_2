@@ -145,6 +145,3 @@ class ServerStack(TerraformStack):
 app = App()
 ServerStack(app, "cdktf_server")
 app.synth()
-
-# https://my-load-balancer-948338658.us-east-1.elb.amazonaws.com/docs
-# http://52.90.83.103/docs
